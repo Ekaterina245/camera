@@ -1,21 +1,12 @@
 # Часть необходимая чтобы не создавалось несколько потоков и процессор не перегружался
 import os
-
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 # Импорт файлов для доп. функций
-# from load_dataset import get_prediction, segment_instance
-from PIL import Image
-import cv2
-import matplotlib.pyplot as plt
-import torch
-import random
 
-import torchvision.transforms as T
-import numpy as np
 import warnings
 
-from sys import argv
+# from sys import argv
 
 warnings.filterwarnings('ignore')
 
@@ -28,12 +19,8 @@ import numpy as np
 
 import cv2
 import random
+import time
 import warnings
-
-from pathlib import Path
-
-warnings.filterwarnings('ignore')
-
 
 def get_coloured_mask(mask):
     """
@@ -101,7 +88,7 @@ def get_prediction(img_path, confidence, model, all_or_every):
     return masks, pred_boxes, pred_class, max_confidence
 
 
-def segment_instance(img_path, path_weight, num_test, filename, all_or_every, confidence=0.2, rect_th=2, text_size=2, text_th=2, key=0):
+def segment_instance(img_path, path_weight, num_test, filename, all_or_every, debug, confidence=0.2, rect_th=2, text_size=2, text_th=2):
     """
     segment_instance
       Параметры:
@@ -117,9 +104,19 @@ def segment_instance(img_path, path_weight, num_test, filename, all_or_every, co
         - each mask is added to the image in the ration 1:0.8 with opencv
 
     """
+    if debug == 1:
+        print(f'time_before_load: {time.time():.5f}')
 
     model = torch.load(path_weight, map_location=torch.device('cpu'))
+
+    if debug == 1:
+        print(f'time_after_load: {time.time():.5f}')
+
     model.eval()
+
+    if debug == 1:
+        print(f'time_after_eval: {time.time():.5f}')
+
     CLASS_NAMES = ['__background__', 'battery']
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     model.to(device)
@@ -130,6 +127,13 @@ def segment_instance(img_path, path_weight, num_test, filename, all_or_every, co
     x, y, x_1, y_1 = 0, 0, 0, 0
     if all_or_every == "every":
         masks, boxes, pred_cls, max_confidence = get_prediction(img_path, confidence, model, all_or_every)
+
+        if debug == 1:
+            print(f'time_after_pred: {time.time():.5f}')
+
+        print("BOXES", boxes)
+        print("BOXES", boxes[0][0][0])
+        boxes = sorted(boxes, key=lambda x: x[0])
         count_masks = len(masks)
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -147,15 +151,33 @@ def segment_instance(img_path, path_weight, num_test, filename, all_or_every, co
             cv2.putText(img, pred_cls[i], boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0),
                         thickness=text_th)
 
+            if i == 0:
+                x = boxes[i][0][0]
+                y = boxes[i][0][1]
+            elif i == 11:
+                x_1 = boxes[i][1][0]
+                y_1 = boxes[i][1][1]
+
+        if debug == 1:
+            print(f'time_before_painting: {time.time():.5f}')
+
         plt.figure(figsize=(20, 30))
         plt.title(f"Результат с точностью {confidence},       Количество масок {count_masks}")
         img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
         plt.imshow(img)
         plt.xticks([])
         plt.yticks([])
+
+        if debug == 1:
+            print(f'time_before_save: {time.time():.5f}')
+
         plt.savefig(result_dir + filename, bbox_inches='tight', pad_inches=0)
         plt.show()
-        return len(masks), x, y, x_1, y_1, masks
+
+        if debug == 1:
+            print(f'time_after_save: {time.time():.5f}')
+
+        return len(masks), x, y, x_1, y_1
 
     else:
         masks, boxes, pred_cls, max_confidence = get_prediction(img_path, confidence, model, all_or_every)
@@ -175,13 +197,12 @@ def segment_instance(img_path, path_weight, num_test, filename, all_or_every, co
             cv2.rectangle(img, boxes[i][0], boxes[i][1], color=(0, 255, 0), thickness=rect_th)
             cv2.putText(img, pred_cls[i], boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0),
                         thickness=text_th)
-            # filename = f'C:/Users/EVM/Documents/camera_test/result/result_only_test/29/img_{random.randint(1, 100)}.png'
+
 
             koor1, koor2 = boxes[0]
             x, y = koor1
             x_1, y_1 = koor2
             key = 1
-            print(f'TYPE {type(result_dir)}, {type(filename)}')
             plt.figure(figsize=(20, 30))
             plt.title(f"Результат с точностью {max_confidence}")
             img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
@@ -196,35 +217,38 @@ def segment_instance(img_path, path_weight, num_test, filename, all_or_every, co
             # plt.imshow(img)
             # plt.savefig(result_dir + filename, bbox_inches='tight', pad_inches=0)
             # plt.show()
-            return max_confidence, x, y, x_1, y_1, masks
+            return max_confidence, x, y, x_1, y_1
 
 
-def CNN(path_weight, path_val, num_test, all_or_every):
+def CNN(path_weight, path_val, num_test, all_or_every, debug):
     root = path_val
     confidence = 0.5
     # imgs = list(sorted(os.listdir(os.path.join(root, image))))
     imgs = list(sorted(os.listdir(root)))
-    print("ДЛИНА СПИСКА", len(imgs))
+    # print("ДЛИНА СПИСКА", len(imgs))
     count_masks_in_all_photo = []
     # all_or_every = 'all'
+
+    if debug == 1:
+        print(f'time_1_in_CNN: {time.time():.5f}')
 
     if all_or_every == 'every':
         for i in range(0, len(imgs)):
             img_path = os.path.join(root, imgs[i])
-            print("IMG_PATH", img_path)
+            # print("IMG_PATH", img_path)
             filename = f'/result_every{i}'
             print("FILE_NAME", filename)
-            count_masks_in_one_photo,  x, y, x_1, y_1, masks = segment_instance(img_path, path_weight, num_test, filename, all_or_every, confidence=confidence)
+            count_masks_in_one_photo,  x, y, x_1, y_1 = segment_instance(img_path, path_weight, num_test, filename, all_or_every, debug, confidence=confidence)
             count_masks_in_all_photo.append(count_masks_in_one_photo)
 
         # print(f'EVERY {count_masks_in_all_photo[0]}')
-        return count_masks_in_all_photo[0],  x, y, x_1, y_1, masks
+        return count_masks_in_all_photo[0],  x, y, x_1, y_1
 
     elif all_or_every == 'all':
         max_confidence = 0.0
         for i in range(0, len(imgs)):
             img_path = os.path.join(root, imgs[i])
-            print("IMG_PATH", img_path)
+            # print("IMG_PATH", img_path)
             filename = f'/result_all{i}'
             print("FILE_NAME", filename)
 
@@ -235,7 +259,7 @@ def CNN(path_weight, path_val, num_test, all_or_every):
             #     search_img_path = img_path
             #     search_filename = filename
 
-        segment_instance(img_path, path_weight, num_test, filename, all_or_every, key=1)
+        # segment_instance(img_path, path_weight, num_test, filename, all_or_every, key=1)
         return 1, x, y, x_1, y_1, masks
 
 
