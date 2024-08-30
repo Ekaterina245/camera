@@ -60,6 +60,14 @@ def united(path_weight, path_weight_seg, path_val, path_res, num_test, debug = 1
 
         if key_err == 1:
             Text = "Ошибка при обнаружении аккумулятора"
+            file_name_er = 'error/QR.png'
+            # Куда сохраняем
+            result_dir = 'result/buffer'
+            # Проверяем, существует ли целевая папка, и если нет, создаем ее
+            os.makedirs(result_dir, exist_ok=True)
+            # Копируем файл в целевую папку
+            shutil.copy(file_name_er, result_dir)
+
         else:
         #
         # # Подсчет сегментов
