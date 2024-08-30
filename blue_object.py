@@ -190,9 +190,9 @@ def visual (right_trans, image, num_test):
         # print(region.bbox)
         # Координаты ограничивающего прямоугольника
         minr, minc, maxr, maxc = region.bbox
-        print(f"Region with label {region.label}: Bounding box coordinates: ({minr}, {minc}) to ({maxr}, {maxc})")
+        # print(f"Region with label {region.label}: Bounding box coordinates: ({minr}, {minc}) to ({maxr}, {maxc})")
         square = abs((maxr - minr) * (maxc - minc))
-        print(f"Region with label {region.label}, {square}")
+        # print(f"Region with label {region.label}, {square}")
 
         if square >= 200 and square <= 1200:
             rect = mpatches.Rectangle(
@@ -252,7 +252,7 @@ def visual (right_trans, image, num_test):
     return result_r, result_end_r
 
 
-def main(path_img, x1, y1, x2, y2, mask_after, num_test):
+def main(path_img, x1, y1, x2, y2, num_test):
     # Загружаем оригинальное изображение
     img_path_cnn = 0
     imgs_cnn = list(sorted(os.listdir(path_img)))
@@ -280,7 +280,7 @@ def main(path_img, x1, y1, x2, y2, mask_after, num_test):
     # Расчет наклона фотографии
     num = (result[-1][0] - result[0][0]) / (result[-1][1] - result[0][1])
     arct_foto = abs(180 * math.atan(num) / math.pi)
-    print(f'УГОЛ НАКЛОНА ФОТОГРАФИИ {arct_foto}')
+    # print(f'УГОЛ НАКЛОНА ФОТОГРАФИИ {arct_foto}')
     # print("SHAPE", image.shape)
     height, width = thresh.shape
     # print(height, width)
@@ -313,12 +313,12 @@ def main(path_img, x1, y1, x2, y2, mask_after, num_test):
     height, width = thresh_rotate.shape
 
     # Формат result_rotate 0 - y1, 1 - x1, 2 - y2, 3 - x2
-    print(f'КООРДИНАТЫ ПОСЛЕ РАЗВОРОТА ПО КОТОРЫМ СЧИТАЕМ {result_rotate}')
+    # print(f'КООРДИНАТЫ ПОСЛЕ РАЗВОРОТА ПО КОТОРЫМ СЧИТАЕМ {result_rotate}')
     # Для вертикального фото
     # x_center = int((result_rotate[0][3] - result_rotate[0][1]) / 2 + result_rotate[0][1])
     # Для горизонтального фото
     у_center = int((result_rotate[0][2] - result_rotate[0][0]) / 2) + result_rotate[0][0]
-    print(f'координаты центра - {у_center}')
+    # print(f'координаты центра - {у_center}')
 
     # горизонтальная область обрезки
 
@@ -358,8 +358,8 @@ def main(path_img, x1, y1, x2, y2, mask_after, num_test):
     result_с = []
     result_end_с = []
     result_с, result_end_с = visual(center_trans, up_down_img_red, num_test)
-    print("Итоговый список", result_с)
-    print("Первый Х", result_с[0][1])
+    # print("Итоговый список", result_с)
+    # print("Первый Х", result_с[0][1])
 
     # new_list_distance = []
     # for i in range(len(result_с)):
@@ -367,7 +367,7 @@ def main(path_img, x1, y1, x2, y2, mask_after, num_test):
     # print(f'Координаты нижних краёв рамок {new_list_distance}')
 
     result_с = sorted(result_с, key =lambda x:x[1])
-    print("SORTED",result_с)
+    # print("SORTED",result_с)
     # percent = []
     # for i in range(len(result_с)):
     #     percent.append((new_list_distance[i] / (shift*2)) * 100)
@@ -391,7 +391,7 @@ def main(path_img, x1, y1, x2, y2, mask_after, num_test):
                 distance = height_QR - (y+h) #100 - (75+14)
             else:
                 distance = height_QR - (height_QR-y)
-            print(f"DISTANCE {distance}")
+            # print(f"DISTANCE {distance}")
 
             if distance * 2 > height_QR:
                 fl = False
